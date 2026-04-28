@@ -127,5 +127,41 @@ namespace Wasl.Infrastructure.Services
 
             return ResultResponse<DashboardResponse>.Success(dashboard);
         }
+
+        // Get products for a specific approved supplier (for merchant browsing).
+        public async Task<ResultResponse<ProductResponse>> GetSupplierProductsAsync(Guid supplierId)
+        {
+            if (!currentUser.IsAuthenticated)
+                return ResultResponse<ProductResponse>.Failure("Unauthorized");
+
+            // Verify the supplier exists and is approved
+            var supplier = await userManager.Users
+                .FirstOrDefaultAsync(u => u.Id == supplierId
+                         && u.UserType == UserType.Supplier
+                         && u.ApprovalStatus == ApprovalStatus.Approved
+                         && u.IsDeleted != true);
+
+            if (supplier is null)
+                return ResultResponse<ProductResponse>.Failure("Supplier not found.");
+
+            var productSpec = new ProductSpecification(p => p.SupplierId == supplierId);
+            var products = await unitOfWork.Repository<Product>().GetAllSpecTrackedAsync(productSpec);
+
+            if (!products.Any())
+                return ResultResponse<ProductResponse>.Failure("No products found for this supplier.");
+
+            var mapped = products.Select(p => new ProductResponse
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Price = p.Price,
+                AvailableQuantity = p.AvailableQuantity,
+                MinimumOrder = p.MinimumOrder,
+                ActivityType = p.ActivityType,
+            }).ToList();
+
+            return ResultResponse<ProductResponse>.Success(mapped);
+        }
     }
 }

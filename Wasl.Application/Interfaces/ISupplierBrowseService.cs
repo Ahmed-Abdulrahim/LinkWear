@@ -16,5 +16,10 @@ namespace Wasl.Application.Interfaces
         /// Get dashboard statistics for the logged-in supplier.
         /// </summary>
         Task<ResultResponse<DashboardResponse>> GetSupplierDashboardAsync();
+
+        /// <summary>
+        /// Get products for a specific supplier (for merchant browsing).
+        /// </summary>
+        Task<ResultResponse<ProductResponse>> GetSupplierProductsAsync(Guid supplierId);
     }
 }

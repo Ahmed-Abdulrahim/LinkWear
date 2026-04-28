@@ -11,7 +11,6 @@ namespace Wasl.Domain.Entites
         public string? DeliveryAddress { get; set; }
         public string? TrackingNumber { get; set; }
         public DateTime? ExpectedDeliveryDate { get; set; }
-
         //Navigation
         public ApplicationUser StoreOwner { get; set; }
         public ApplicationUser Supplier { get; set; }

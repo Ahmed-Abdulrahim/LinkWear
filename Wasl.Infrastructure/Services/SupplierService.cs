@@ -4,7 +4,7 @@ namespace Wasl.Infrastructure.Services
     public class SupplierService(ICurrentUserService currentUser, IUnitOfWork unitOfWork, IMapper mapper, INotificationService notificationService, UserManager<ApplicationUser> userManager, ILogger<SupplierService> logger) : ISupplierService
     {
         // Get all orders assigned to this Supplier
-        public async Task<ResultResponse<OrderResponse>> GetSupplierOrdersAsync()
+        public async Task<ResultResponse<OrderResponse>> GetSupplierOrdersAsync(OrderStatus? status = null)
         {
             if (!currentUser.IsAuthenticated)
                 return ResultResponse<OrderResponse>.Failure("Unauthorized");
@@ -13,7 +13,11 @@ namespace Wasl.Infrastructure.Services
 
             if (currentUser.Role == "Supplier")
             {
-                spec = new OrderSpecification(p => p.SupplierId == Guid.Parse(currentUser.UserId!));
+                var supplierId = Guid.Parse(currentUser.UserId!);
+                if (status.HasValue)
+                    spec = new OrderSpecification(p => p.SupplierId == supplierId && p.Status == status.Value);
+                else
+                    spec = new OrderSpecification(p => p.SupplierId == supplierId);
             }
             else
             {
@@ -53,8 +57,141 @@ namespace Wasl.Infrastructure.Services
             return ResultResponse<OrderResponse>.Success(mapped);
         }
 
-        // Supplier updates order status. Valid transitions: Pending → Preparing → Shipped → Delivered.
-        // Triggers notification to the StoreOwner.
+        // Supplier accepts a pending order (adds AwaitingPayment tracking, notifies merchant)
+        public async Task<ResultResponse<OrderResponse>> AcceptOrderAsync(Guid orderId)
+        {
+            if (!currentUser.IsAuthenticated)
+                return ResultResponse<OrderResponse>.Failure("Unauthorized");
+
+            if (currentUser.Role != "Supplier")
+                return ResultResponse<OrderResponse>.Failure("Unauthorized role");
+
+            var spec = new OrderSpecification(o => o.Id == orderId && o.SupplierId == Guid.Parse(currentUser.UserId!));
+            var order = await unitOfWork.Repository<Order>().GetByIdSpecTrackedAsync(spec);
+
+            if (order is null)
+                return ResultResponse<OrderResponse>.Failure("Order not found or not assigned to you.");
+
+            if (order.Status != OrderStatus.Pending)
+                return ResultResponse<OrderResponse>.Failure("Only pending orders can be accepted.");
+
+            // Add AwaitingPayment tracking entry
+            await AddTrackingEntry(order.Id, TrackingStatus.AwaitingPayment, order.Status, order.Status);
+
+            await unitOfWork.CommitAsync();
+
+            logger.LogInformation("Supplier {SupplierId} accepted order {OrderId}",
+                currentUser.UserId, orderId);
+
+            // Notify the StoreOwner
+            await notificationService.SendAndSaveNotificationAsync(
+                order.StoreOwnerId,
+                "Order Accepted",
+                $"Your order {order.OrderNumber} has been accepted by the supplier. Please proceed with payment.",
+                NotificationType.OrderStatusUpdated,
+                order.Id);
+
+            var mapped = mapper.Map<OrderResponse>(order);
+            return ResultResponse<OrderResponse>.Success(mapped);
+        }
+
+        // Supplier rejects a pending order (changes status to Cancelled, notifies merchant)
+        public async Task<ResultResponse<OrderResponse>> RejectOrderAsync(Guid orderId)
+        {
+            if (!currentUser.IsAuthenticated)
+                return ResultResponse<OrderResponse>.Failure("Unauthorized");
+
+            if (currentUser.Role != "Supplier")
+                return ResultResponse<OrderResponse>.Failure("Unauthorized role");
+
+            var spec = new OrderSpecification(o => o.Id == orderId && o.SupplierId == Guid.Parse(currentUser.UserId!));
+            var order = await unitOfWork.Repository<Order>().GetByIdSpecTrackedAsync(spec);
+
+            if (order is null)
+                return ResultResponse<OrderResponse>.Failure("Order not found or not assigned to you.");
+
+            if (order.Status != OrderStatus.Pending)
+                return ResultResponse<OrderResponse>.Failure("Only pending orders can be rejected.");
+
+            order.Status = OrderStatus.Cancelled;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            await unitOfWork.CommitAsync();
+
+            logger.LogInformation("Supplier {SupplierId} rejected order {OrderId}",
+                currentUser.UserId, orderId);
+
+            // Notify the StoreOwner
+            await notificationService.SendAndSaveNotificationAsync(
+                order.StoreOwnerId,
+                "Order Rejected",
+                $"Your order {order.OrderNumber} has been rejected by the supplier.",
+                NotificationType.OrderCancelled,
+                order.Id);
+
+            var mapped = mapper.Map<OrderResponse>(order);
+            return ResultResponse<OrderResponse>.Success(mapped);
+        }
+
+        // Supplier submits a price offer for a pending order (عرض السعر)
+        // Sets UnitPrice on all items, saves SupplierNotes, transitions to AwaitingPayment, notifies merchant
+        public async Task<ResultResponse<OrderResponse>> SubmitPriceOfferAsync(Guid orderId, SubmitPriceOfferDto dto)
+        {
+            if (!currentUser.IsAuthenticated)
+                return ResultResponse<OrderResponse>.Failure("Unauthorized");
+
+            if (currentUser.Role != "Supplier")
+                return ResultResponse<OrderResponse>.Failure("Unauthorized role");
+
+            var spec = new OrderSpecification(o => o.Id == orderId && o.SupplierId == Guid.Parse(currentUser.UserId!));
+            var order = await unitOfWork.Repository<Order>().GetByIdSpecTrackedAsync(spec);
+
+            if (order is null)
+                return ResultResponse<OrderResponse>.Failure("Order not found or not assigned to you.");
+
+            if (order.Status != OrderStatus.Pending)
+                return ResultResponse<OrderResponse>.Failure("Price offer can only be submitted for pending orders.");
+
+            // Update unit price on every item and recalculate total
+            if (order.Items != null)
+            {
+                foreach (var item in order.Items)
+                {
+                    item.UnitPrice = dto.UnitPrice;
+                }
+            }
+            order.TotalAmount = order.Items?.Sum(i => i.UnitPrice * i.Quantity) ?? 0;
+
+            // Append supplier notes to the existing order notes
+            if (!string.IsNullOrWhiteSpace(dto.Notes))
+            {
+                order.Notes = string.IsNullOrWhiteSpace(order.Notes)
+                    ? $"[Supplier]: {dto.Notes}"
+                    : $"{order.Notes}\n[Supplier]: {dto.Notes}";
+            }
+            order.UpdatedAt = DateTime.UtcNow;
+
+            // Add AwaitingPayment tracking entry
+            await AddTrackingEntry(order.Id, TrackingStatus.AwaitingPayment, order.Status, order.Status);
+
+            await unitOfWork.CommitAsync();
+
+            logger.LogInformation("Supplier {SupplierId} submitted price offer for order {OrderId}: UnitPrice={UnitPrice}",
+                currentUser.UserId, orderId, dto.UnitPrice);
+
+            // Notify the StoreOwner (merchant) about the price offer
+            await notificationService.SendAndSaveNotificationAsync(
+                order.StoreOwnerId,
+                "Price Offer Received",
+                $"The supplier has submitted a price offer for order {order.OrderNumber}. Unit price: {dto.UnitPrice:F2}. Please review and proceed with payment.",
+                NotificationType.PriceOfferSubmitted,
+                order.Id);
+
+            var mapped = mapper.Map<OrderResponse>(order);
+            return ResultResponse<OrderResponse>.Success(mapped);
+        }
+
+        // Supplier updates order status. Valid transitions: Paid → Shipped → Delivered.
         public async Task<ResultResponse<OrderResponse>> UpdateOrderStatusAsync(Guid orderId, UpdateOrderStatusDto dto)
         {
             if (!currentUser.IsAuthenticated)

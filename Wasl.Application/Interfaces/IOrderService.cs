@@ -1,9 +1,9 @@
-﻿namespace Wasl.Application.Interfaces
+namespace Wasl.Application.Interfaces
 {
     public interface IOrderService
     {
         // Get all orders for a specific store owner
-        Task<ResultResponse<OrderResponse>> GetOrdersAsync();
+        Task<ResultResponse<OrderResponse>> GetOrdersAsync(OrderStatus? status = null);
 
         // Get order details by StoreOwner or Supplier
         Task<ResultResponse<OrderResponse>> GetOrderDetails(Guid orderId);
@@ -13,5 +13,11 @@
 
         // Store Owner cancels a pending order
         Task<ResultResponse<object>> CancelOrderAsync(Guid orderId);
+
+        // Get merchant dashboard statistics
+        Task<ResultResponse<MerchantDashboardResponse>> GetMerchantDashboardAsync();
+
+        // Store Owner confirms payment (fake — status change only)
+        Task<ResultResponse<OrderResponse>> ConfirmPaymentAsync(Guid orderId);
     }
 }

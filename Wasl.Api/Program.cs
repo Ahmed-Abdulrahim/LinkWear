@@ -45,7 +45,7 @@ namespace Wasl.Api
               "wasl-2b1be-firebase-adminsdk-fbsvc-022ffcfc3d.json"
           );*/
 
-            var firebaseJson = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS");
+            /*var firebaseJson = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS");
             if (string.IsNullOrEmpty(firebaseJson))
             {
                 throw new Exception("Firebase credentials not found");
@@ -54,7 +54,7 @@ namespace Wasl.Api
             FirebaseApp.Create(new AppOptions()
             {
                 Credential = GoogleCredential.FromJson(firebaseJson)
-            });
+            });*/
 
 
 

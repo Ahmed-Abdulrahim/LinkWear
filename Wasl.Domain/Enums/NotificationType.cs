@@ -10,6 +10,7 @@ namespace Wasl.Domain.Enums
         SupplierRejected = 5,
         OrderCancelled = 6,
         PaymentSuccess = 7,
-        PaymentFailed = 8
+        PaymentFailed = 8,
+        PriceOfferSubmitted = 9
     }
 }

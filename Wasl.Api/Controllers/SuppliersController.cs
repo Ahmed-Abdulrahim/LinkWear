@@ -28,5 +28,17 @@ namespace Wasl.Api.Controllers
             if (!result.Succeeded) return BadRequest(result);
             return Ok(result);
         }
+
+        // Get supplier products by supplier ID.
+
+        [HttpGet("{supplierId:guid}/products")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetSupplierProducts(Guid supplierId)
+        {
+            var result = await supplierBrowseService.GetSupplierProductsAsync(supplierId);
+            if (!result.Succeeded) return BadRequest(result);
+            return Ok(result);
+        }
     }
 }

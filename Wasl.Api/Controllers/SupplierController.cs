@@ -20,9 +20,9 @@ namespace Wasl.Api.Controllers
         [HttpGet("orders")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GetAllOrders()
+        public async Task<IActionResult> GetAllOrders([FromQuery] OrderStatus? status = null)
         {
-            var result = await supplierService.GetSupplierOrdersAsync();
+            var result = await supplierService.GetSupplierOrdersAsync(status);
             if (!result.Succeeded) return BadRequest(result);
             return Ok(result);
         }
@@ -36,6 +36,39 @@ namespace Wasl.Api.Controllers
 
 
             var result = await supplierService.GetPendingOrdersAsync();
+            if (!result.Succeeded) return BadRequest(result);
+            return Ok(result);
+        }
+
+        // Supplier submits a price offer for a pending order (عرض السعر).
+        [HttpPut("orders/{orderId}/price-offer")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> SubmitPriceOffer(Guid orderId, [FromBody] SubmitPriceOfferDto dto)
+        {
+            var result = await supplierService.SubmitPriceOfferAsync(orderId, dto);
+            if (!result.Succeeded) return BadRequest(result);
+            return Ok(result);
+        }
+
+        // Supplier accepts a pending order.
+        [HttpPut("orders/{orderId}/accept")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> AcceptOrder(Guid orderId)
+        {
+            var result = await supplierService.AcceptOrderAsync(orderId);
+            if (!result.Succeeded) return BadRequest(result);
+            return Ok(result);
+        }
+
+        // Supplier rejects a pending order.
+        [HttpPut("orders/{orderId}/reject")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> RejectOrder(Guid orderId)
+        {
+            var result = await supplierService.RejectOrderAsync(orderId);
             if (!result.Succeeded) return BadRequest(result);
             return Ok(result);
         }

@@ -55,6 +55,26 @@ namespace Wasl.Infrastructure.Services
             await unitOfWork.Repository<Order>().AddAsync(order);
             await unitOfWork.CommitAsync();
 
+            // Add initial tracking entries (OrderPlaced + UnderReview)
+            var trackingRepo = unitOfWork.Repository<ShipmentTrackingHistory>();
+            await trackingRepo.AddAsync(new ShipmentTrackingHistory
+            {
+                OrderId = order.Id,
+                Status = TrackingStatus.OrderPlaced,
+                StatusDescription = "Order has been placed.",
+                StatusDate = DateTime.UtcNow,
+                IsCurrent = false
+            });
+            await trackingRepo.AddAsync(new ShipmentTrackingHistory
+            {
+                OrderId = order.Id,
+                Status = TrackingStatus.UnderReview,
+                StatusDescription = "Order is under review by supplier.",
+                StatusDate = DateTime.UtcNow,
+                IsCurrent = true
+            });
+            await unitOfWork.CommitAsync();
+
             // Notify the Supplier about the new order
             await notificationService.SendAndSaveNotificationAsync(
                 dto.SupplierId,
@@ -102,7 +122,7 @@ namespace Wasl.Infrastructure.Services
 
 
         // Get all orders for a specific StoreOwner
-        public async Task<ResultResponse<OrderResponse>> GetOrdersAsync()
+        public async Task<ResultResponse<OrderResponse>> GetOrdersAsync(OrderStatus? status = null)
         {
             if (!currentUser.IsAuthenticated)
                 return ResultResponse<OrderResponse>.Failure("Unauthorized");
@@ -111,7 +131,11 @@ namespace Wasl.Infrastructure.Services
 
             if (currentUser.Role == "StoreOwner")
             {
-                spec = new OrderSpecification(p => p.StoreOwnerId == Guid.Parse(currentUser.UserId!));
+                var userId = Guid.Parse(currentUser.UserId!);
+                if (status.HasValue)
+                    spec = new OrderSpecification(p => p.StoreOwnerId == userId && p.Status == status.Value);
+                else
+                    spec = new OrderSpecification(p => p.StoreOwnerId == userId);
             }
             else if (currentUser.Role == "Admin")
             {
@@ -127,6 +151,105 @@ namespace Wasl.Infrastructure.Services
                 return ResultResponse<OrderResponse>.Failure("No orders found.");
 
             var mapped = mapper.Map<List<OrderResponse>>(orders);
+            return ResultResponse<OrderResponse>.Success(mapped);
+        }
+
+
+        // Merchant dashboard statistics
+        public async Task<ResultResponse<MerchantDashboardResponse>> GetMerchantDashboardAsync()
+        {
+            if (!currentUser.IsAuthenticated)
+                return ResultResponse<MerchantDashboardResponse>.Failure("Unauthorized");
+
+            if (currentUser.Role != "StoreOwner")
+                return ResultResponse<MerchantDashboardResponse>.Failure("Unauthorized role");
+
+            var storeOwnerId = Guid.Parse(currentUser.UserId!);
+
+            var orderSpec = new OrderSpecification(o => o.StoreOwnerId == storeOwnerId);
+            var orders = await unitOfWork.Repository<Order>().GetAllSpecTrackedAsync(orderSpec);
+            var orderList = orders.ToList();
+
+            var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            var ordersThisMonth = orderList.Count(o => o.CreatedAt >= startOfMonth);
+            var underReviewCount = orderList.Count(o => o.Status == OrderStatus.Pending);
+            var shippingCount = orderList.Count(o => o.Status == OrderStatus.Shipped);
+
+            var recentOrders = orderList
+                .OrderByDescending(o => o.CreatedAt)
+                .Take(10)
+                .Select(o => new RecentOrderDto
+                {
+                    OrderId = o.Id,
+                    OrderNumber = o.OrderNumber ?? string.Empty,
+                    StoreOwnerName = o.Supplier?.BusinessName,
+                    ProductName = o.Items?.FirstOrDefault()?.Product?.Name,
+                    Quantity = o.Items?.Sum(i => i.Quantity) ?? 0,
+                    Status = o.Status,
+                    CreatedAt = o.CreatedAt,
+                })
+                .ToList();
+
+            var dashboard = new MerchantDashboardResponse
+            {
+                OrdersThisMonth = ordersThisMonth,
+                UnderReviewCount = underReviewCount,
+                ShippingCount = shippingCount,
+                RecentOrders = recentOrders,
+            };
+
+            return ResultResponse<MerchantDashboardResponse>.Success(dashboard);
+        }
+
+
+        // Merchant confirms payment (fake — just changes status Pending → Paid)
+        public async Task<ResultResponse<OrderResponse>> ConfirmPaymentAsync(Guid orderId)
+        {
+            if (!currentUser.IsAuthenticated)
+                return ResultResponse<OrderResponse>.Failure("Unauthorized");
+
+            if (currentUser.Role != "StoreOwner")
+                return ResultResponse<OrderResponse>.Failure("Unauthorized role");
+
+            var storeOwnerId = Guid.Parse(currentUser.UserId!);
+            var spec = new OrderSpecification(o => o.Id == orderId && o.StoreOwnerId == storeOwnerId);
+            var order = await unitOfWork.Repository<Order>().GetByIdSpecTrackedAsync(spec);
+
+            if (order is null)
+                return ResultResponse<OrderResponse>.Failure("Order not found.");
+
+            if (order.Status != OrderStatus.Pending)
+                return ResultResponse<OrderResponse>.Failure("Order is not awaiting payment.");
+
+            order.Status = OrderStatus.Paid;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            // Add Paid tracking entry
+            var trackingSpec = new ShipmentTrackingHistorySpecification(x => x.OrderId == orderId && x.IsCurrent);
+            var oldEntries = await unitOfWork.Repository<ShipmentTrackingHistory>().GetAllSpecTrackedAsync(trackingSpec);
+            foreach (var item in oldEntries)
+                item.IsCurrent = false;
+
+            await unitOfWork.Repository<ShipmentTrackingHistory>().AddAsync(new ShipmentTrackingHistory
+            {
+                OrderId = order.Id,
+                Status = TrackingStatus.Paid,
+                StatusDescription = "Payment confirmed.",
+                StatusDate = DateTime.UtcNow,
+                IsCurrent = true
+            });
+
+            await unitOfWork.CommitAsync();
+
+            // Notify the Supplier about the payment
+            await notificationService.SendAndSaveNotificationAsync(
+                order.SupplierId,
+                "Payment Confirmed",
+                $"Payment for order {order.OrderNumber} has been confirmed.",
+                NotificationType.PaymentSuccess,
+                order.Id);
+
+            var mapped = mapper.Map<OrderResponse>(order);
             return ResultResponse<OrderResponse>.Success(mapped);
         }
 

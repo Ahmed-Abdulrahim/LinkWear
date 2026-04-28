@@ -1,4 +1,4 @@
-﻿namespace Wasl.Api.Controllers
+namespace Wasl.Api.Controllers
 {
 
     [ApiController]
@@ -34,9 +34,33 @@
         [Authorize(Roles = "StoreOwner")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GetOrders()
+        public async Task<IActionResult> GetOrders([FromQuery] OrderStatus? status = null)
         {
-            var result = await orderService.GetOrdersAsync();
+            var result = await orderService.GetOrdersAsync(status);
+            if (!result.Succeeded) return BadRequest(result);
+            return Ok(result);
+        }
+
+        // StoreOwner dashboard statistics.
+        [HttpGet("dashboard")]
+        [Authorize(Roles = "StoreOwner")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetDashboard()
+        {
+            var result = await orderService.GetMerchantDashboardAsync();
+            if (!result.Succeeded) return BadRequest(result);
+            return Ok(result);
+        }
+
+        // StoreOwner confirms payment (fake — status change only).
+        [HttpPut("{orderId}/confirm-payment")]
+        [Authorize(Roles = "StoreOwner")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ConfirmPayment(Guid orderId)
+        {
+            var result = await orderService.ConfirmPaymentAsync(orderId);
             if (!result.Succeeded) return BadRequest(result);
             return Ok(result);
         }

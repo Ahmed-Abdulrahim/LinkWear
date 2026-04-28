@@ -74,7 +74,7 @@
             var spec = new ProductSpecification(ProductId);
             var getProduct = await unitOfWork.Repository<Product>().GetByIdSpecAsync(spec);
             if (getProduct is null) return ResultResponse<ProductResponse>.Failure("Product not found ");
-            if (getProduct.SupplierId == Guid.Parse(currentUser.UserId!)) return ResultResponse<ProductResponse>.Failure("Unauthorized to delete this Product ");
+            if (getProduct.SupplierId != Guid.Parse(currentUser.UserId!)) return ResultResponse<ProductResponse>.Failure("Unauthorized to delete this Product ");
             unitOfWork.Repository<Product>().Delete(getProduct);
             await unitOfWork.CommitAsync();
             return ResultResponse<ProductResponse>.Success("Product deleted successfully ");
