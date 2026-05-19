@@ -40,75 +40,75 @@ namespace Wasl.Infrastructure.Services
 
         #region Supplier Approval
 
-        public async Task<ResultResponse<UserProfileResponse>> GetPendingSuppliersAsync()
-        {
-            var users = await userManager.Users
-                .Where(u => u.UserType == UserType.Supplier && u.ApprovalStatus == ApprovalStatus.Pending)
-                .ToListAsync();
+        /* public async Task<ResultResponse<UserProfileResponse>> GetPendingSuppliersAsync()
+         {
+             var users = await userManager.Users
+                 .Where(u => u.UserType == UserType.Supplier && u.ApprovalStatus == ApprovalStatus.Pending)
+                 .ToListAsync();
 
-            if (!users.Any())
-                return ResultResponse<UserProfileResponse>.Failure("No pending Suppliers found.");
+             if (!users.Any())
+                 return ResultResponse<UserProfileResponse>.Failure("No pending Suppliers found.");
 
-            var map = mapper.Map<List<UserProfileResponse>>(users);
-            return ResultResponse<UserProfileResponse>.Success(map);
-        }
+             var map = mapper.Map<List<UserProfileResponse>>(users);
+             return ResultResponse<UserProfileResponse>.Success(map);
+         }
 
-        public async Task<ResultResponse<UserProfileResponse>> ApproveSupplierAsync(Guid supplierId)
-        {
-            var user = await userManager.Users
-                .Where(u => u.Id == supplierId && u.UserType == UserType.Supplier)
-                .FirstOrDefaultAsync();
+         public async Task<ResultResponse<UserProfileResponse>> ApproveSupplierAsync(Guid supplierId)
+         {
+             var user = await userManager.Users
+                 .Where(u => u.Id == supplierId && u.UserType == UserType.Supplier)
+                 .FirstOrDefaultAsync();
 
-            if (user is null)
-                return ResultResponse<UserProfileResponse>.Failure("Supplier not found.");
+             if (user is null)
+                 return ResultResponse<UserProfileResponse>.Failure("Supplier not found.");
 
-            if (user.ApprovalStatus != ApprovalStatus.Pending)
-                return ResultResponse<UserProfileResponse>.Failure("Supplier is not in Pending status.");
+             if (user.ApprovalStatus != ApprovalStatus.Pending)
+                 return ResultResponse<UserProfileResponse>.Failure("Supplier is not in Pending status.");
 
-            user.ApprovalStatus = ApprovalStatus.Approved;
-            await userManager.UpdateAsync(user);
+             user.ApprovalStatus = ApprovalStatus.Approved;
+             await userManager.UpdateAsync(user);
 
-            logger.LogInformation("Supplier {SupplierId} approved by admin.", supplierId);
+             logger.LogInformation("Supplier {SupplierId} approved by admin.", supplierId);
 
-            // Notify the Supplier about approval
-            await notificationService.SendAndSaveNotificationAsync(
-                supplierId,
-                "Account Approved",
-                "Your Supplier account has been approved. You can now receive orders.",
-                NotificationType.SupplierApproved);
+             // Notify the Supplier about approval
+             await notificationService.SendAndSaveNotificationAsync(
+                 supplierId,
+                 "Account Approved",
+                 "Your Supplier account has been approved. You can now receive orders.",
+                 NotificationType.SupplierApproved);
 
-            var map = mapper.Map<UserProfileResponse>(user);
-            return ResultResponse<UserProfileResponse>.Success(map);
-        }
+             var map = mapper.Map<UserProfileResponse>(user);
+             return ResultResponse<UserProfileResponse>.Success(map);
+         }
 
 
-        public async Task<ResultResponse<UserProfileResponse>> RejectSupplierAsync(Guid supplierId)
-        {
-            var user = await userManager.Users
-                .Where(u => u.Id == supplierId && u.UserType == UserType.Supplier)
-                .FirstOrDefaultAsync();
+         public async Task<ResultResponse<UserProfileResponse>> RejectSupplierAsync(Guid supplierId)
+         {
+             var user = await userManager.Users
+                 .Where(u => u.Id == supplierId && u.UserType == UserType.Supplier)
+                 .FirstOrDefaultAsync();
 
-            if (user is null)
-                return ResultResponse<UserProfileResponse>.Failure("Supplier not found.");
+             if (user is null)
+                 return ResultResponse<UserProfileResponse>.Failure("Supplier not found.");
 
-            if (user.ApprovalStatus != ApprovalStatus.Pending)
-                return ResultResponse<UserProfileResponse>.Failure("Supplier is not in Pending status.");
+             if (user.ApprovalStatus != ApprovalStatus.Pending)
+                 return ResultResponse<UserProfileResponse>.Failure("Supplier is not in Pending status.");
 
-            user.ApprovalStatus = ApprovalStatus.Rejected;
-            await userManager.UpdateAsync(user);
+             user.ApprovalStatus = ApprovalStatus.Rejected;
+             await userManager.UpdateAsync(user);
 
-            logger.LogInformation("Supplier {SupplierId} rejected by admin.", supplierId);
+             logger.LogInformation("Supplier {SupplierId} rejected by admin.", supplierId);
 
-            // Notify the Supplier about rejection
-            await notificationService.SendAndSaveNotificationAsync(
-                supplierId,
-                "Account Rejected",
-                "Your Supplier account has been rejected. Please contact support for more information.",
-                NotificationType.SupplierRejected);
+             // Notify the Supplier about rejection
+             await notificationService.SendAndSaveNotificationAsync(
+                 supplierId,
+                 "Account Rejected",
+                 "Your Supplier account has been rejected. Please contact support for more information.",
+                 NotificationType.SupplierRejected);
 
-            var map = mapper.Map<UserProfileResponse>(user);
-            return ResultResponse<UserProfileResponse>.Success(map);
-        }
+             var map = mapper.Map<UserProfileResponse>(user);
+             return ResultResponse<UserProfileResponse>.Success(map);
+         }*/
 
         #endregion
 

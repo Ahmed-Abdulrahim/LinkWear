@@ -7,9 +7,9 @@ namespace Wasl.Application.Interfaces
         Task<ResultResponse<UserProfileResponse>> DeleteUserAsync(Guid userId);
 
         // Supplier Approval
-        Task<ResultResponse<UserProfileResponse>> GetPendingSuppliersAsync();
-        Task<ResultResponse<UserProfileResponse>> ApproveSupplierAsync(Guid supplierId);
-        Task<ResultResponse<UserProfileResponse>> RejectSupplierAsync(Guid supplierId);
+        /* Task<ResultResponse<UserProfileResponse>> GetPendingSuppliersAsync();
+         Task<ResultResponse<UserProfileResponse>> ApproveSupplierAsync(Guid supplierId);
+         Task<ResultResponse<UserProfileResponse>> RejectSupplierAsync(Guid supplierId);*/
 
         // Order Monitoring
         Task<ResultResponse<OrderResponse>> GetAllOrdersAsync();

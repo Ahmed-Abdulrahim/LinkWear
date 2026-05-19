@@ -9,10 +9,10 @@ namespace Wasl.Application.Interfaces
         Task<ResultResponse<OrderResponse>> GetPendingOrdersAsync();
 
         // Supplier accepts a pending order (adds AwaitingPayment tracking)
-        Task<ResultResponse<OrderResponse>> AcceptOrderAsync(Guid orderId);
+        /*  Task<ResultResponse<OrderResponse>> AcceptOrderAsync(Guid orderId);
 
-        // Supplier rejects a pending order (changes status to Cancelled)
-        Task<ResultResponse<OrderResponse>> RejectOrderAsync(Guid orderId);
+          // Supplier rejects a pending order (changes status to Cancelled)
+          Task<ResultResponse<OrderResponse>> RejectOrderAsync(Guid orderId);*/
 
         // Supplier submits a price offer (unit price + notes) for a pending order
         // Triggers a notification to the StoreOwner

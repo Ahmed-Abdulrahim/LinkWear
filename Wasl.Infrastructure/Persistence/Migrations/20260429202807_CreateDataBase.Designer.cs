@@ -12,7 +12,7 @@ using Wasl.Infrastructure.Persistence.DbContext;
 namespace Wasl.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(WaslDbContext))]
-    [Migration("20260418201940_CreateDataBase")]
+    [Migration("20260429202807_CreateDataBase")]
     partial class CreateDataBase
     {
         /// <inheritdoc />

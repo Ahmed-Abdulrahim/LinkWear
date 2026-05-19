@@ -52,26 +52,26 @@ namespace Wasl.Api.Controllers
         }
 
         // Supplier accepts a pending order.
-        [HttpPut("orders/{orderId}/accept")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> AcceptOrder(Guid orderId)
-        {
-            var result = await supplierService.AcceptOrderAsync(orderId);
-            if (!result.Succeeded) return BadRequest(result);
-            return Ok(result);
-        }
+        /* [HttpPut("orders/{orderId}/accept")]
+         [ProducesResponseType(StatusCodes.Status200OK)]
+         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+         public async Task<IActionResult> AcceptOrder(Guid orderId)
+         {
+             var result = await supplierService.AcceptOrderAsync(orderId);
+             if (!result.Succeeded) return BadRequest(result);
+             return Ok(result);
+         }
 
-        // Supplier rejects a pending order.
-        [HttpPut("orders/{orderId}/reject")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> RejectOrder(Guid orderId)
-        {
-            var result = await supplierService.RejectOrderAsync(orderId);
-            if (!result.Succeeded) return BadRequest(result);
-            return Ok(result);
-        }
+         // Supplier rejects a pending order.
+         [HttpPut("orders/{orderId}/reject")]
+         [ProducesResponseType(StatusCodes.Status200OK)]
+         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+         public async Task<IActionResult> RejectOrder(Guid orderId)
+         {
+             var result = await supplierService.RejectOrderAsync(orderId);
+             if (!result.Succeeded) return BadRequest(result);
+             return Ok(result);
+         }*/
 
         // Update order status
         [HttpPut("orders/{orderId}/status")]

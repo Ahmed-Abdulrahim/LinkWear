@@ -18,26 +18,30 @@
 
             var userType = StaticMethod.MapRoleToUserType(registerDto.Role);
 
-            var approvalStatus = userType == UserType.StoreOwner
-                ? ApprovalStatus.Approved
-                : ApprovalStatus.Pending;
+
 
             var user = new ApplicationUser
             {
                 Email = registerDto.Email,
-                UserName = registerDto.Email,          
+                UserName = GenerateUsername(),
                 BusinessName = registerDto.BusinessName,
-                PhoneNumber = registerDto.PhoneNumber, 
-                ActivityType = registerDto.ActivityType, 
-                City = registerDto.City,               
-                BusinessDescription = registerDto.BusinessDescription, 
+                PhoneNumber = registerDto.PhoneNumber,
+                ActivityType = registerDto.ActivityType,
+                City = registerDto.City,
+                BusinessDescription = registerDto.BusinessDescription,
                 IsDeleted = false,
-                ApprovalStatus = approvalStatus,
+                ApprovalStatus = ApprovalStatus.Approved,
                 UserType = userType,
                 CreatedAt = DateTime.UtcNow,
             };
 
-            var createUser = await userManager.CreateAsync(user, registerDto.Password);
+            IdentityResult createUser;
+            do
+            {
+                user.UserName = GenerateUsername();
+                createUser = await userManager.CreateAsync(user, registerDto.Password);
+            }
+            while (!createUser.Succeeded && createUser.Errors.Any(e => e.Code == "DuplicateUserName"));
 
             if (!createUser.Succeeded)
             {
@@ -73,6 +77,7 @@
                 Id = user.Id,
                 RequiresEmailConfirmation = true,
                 UserName = user.UserName!,
+                PhoneNUmber = user.PhoneNumber!,
             };
 
             return ResultResponse<RegisterResponse>.Success(registerResponse, "Registration successful. Please check your email to confirm your account.");
@@ -236,7 +241,9 @@
             {
                 AccessToken = accessToken,
                 Id = user.Id,
+                UserName = user.UserName!,
                 Email = user.Email!,
+                PhoneNumber = user.PhoneNumber!,
                 RefreshToken = refreshToken,
                 AccessTokenExpiration = tokenService.GetAccessTokenExpiration(),
                 RefreshTokenExpiration = tokenService.GetRefreshTokenExpiration(),
@@ -246,6 +253,24 @@
             return ResultResponse<LoginResponse>.Success(loginResponse, "Login Successfully");
         }
 
+        public static string GenerateUsername()
+        {
+            const string letters = "abcdefghijklmnopqrstuvwxyz";
+            const string digits = "0123456789";
 
+            var random = new Random();
+
+            // 4 random letters
+            string letterPart = new string(Enumerable.Range(0, 4)
+                .Select(_ => letters[random.Next(letters.Length)])
+                .ToArray());
+
+            // 3 random digits
+            string digitPart = new string(Enumerable.Range(0, 3)
+                .Select(_ => digits[random.Next(digits.Length)])
+                .ToArray());
+
+            return letterPart + digitPart; // e.g. "xkqm482"
+        }
     }
 }

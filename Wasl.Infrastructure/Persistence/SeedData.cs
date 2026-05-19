@@ -43,6 +43,8 @@
             {
         new
         {
+            UserName="xyzz235",
+
             Email = "admin@wasl.com",
             FullName = "System Admin",
             Role = "Admin",
@@ -57,7 +59,10 @@
         },
         new
         {
+            UserName="abcd123",
+
             Email = "storeowner@wasl.com",
+
             FullName = "Store Owner",
             Role = "StoreOwner",
             Password = "P@ssw0rd",
@@ -71,8 +76,11 @@
         },
         new
         {
+            UserName="cvbn478",
+
             Email = "supplier@wasl.com",
             FullName = "Test Supplier",
+
             Role = "Supplier",
             Password = "P@ssw0rd",
             UserType = UserType.Supplier,
@@ -92,7 +100,7 @@
                 {
                     var newUser = new ApplicationUser
                     {
-                        UserName = user.Email,
+                        UserName = user.UserName,
                         Email = user.Email,
                         EmailConfirmed = true,
                         IsDeleted = false,

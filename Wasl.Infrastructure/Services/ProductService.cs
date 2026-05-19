@@ -119,6 +119,10 @@
                 Id = result.Id,
                 Name = result.Name,
                 Price = result.Price,
+                Description = result.Description,
+                ActivityType = result.ActivityType,
+                AvailableQuantity = result.AvailableQuantity,
+                MinimumOrder = result.MinimumOrder,
             };
             return ResultResponse<ProductResponse>.Success(retriveProduct);
         }

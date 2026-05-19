@@ -29,7 +29,7 @@ namespace Wasl.Api.Controllers
         }
 
         // Get all Suppliers pending approval.
-        [HttpGet("suppliers/pending")]
+        /*[HttpGet("suppliers/pending")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> GetPendingSuppliers()
@@ -59,7 +59,7 @@ namespace Wasl.Api.Controllers
             var result = await adminService.RejectSupplierAsync(supplierId);
             if (!result.Succeeded) return BadRequest(result);
             return Ok(result);
-        }
+        }*/
 
         // Get all orders in the system for monitoring.
         [HttpGet("orders")]

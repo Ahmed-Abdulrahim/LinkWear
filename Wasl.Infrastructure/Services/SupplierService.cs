@@ -58,80 +58,80 @@ namespace Wasl.Infrastructure.Services
         }
 
         // Supplier accepts a pending order (adds AwaitingPayment tracking, notifies merchant)
-        public async Task<ResultResponse<OrderResponse>> AcceptOrderAsync(Guid orderId)
-        {
-            if (!currentUser.IsAuthenticated)
-                return ResultResponse<OrderResponse>.Failure("Unauthorized");
+        /* public async Task<ResultResponse<OrderResponse>> AcceptOrderAsync(Guid orderId)
+         {
+             if (!currentUser.IsAuthenticated)
+                 return ResultResponse<OrderResponse>.Failure("Unauthorized");
 
-            if (currentUser.Role != "Supplier")
-                return ResultResponse<OrderResponse>.Failure("Unauthorized role");
+             if (currentUser.Role != "Supplier")
+                 return ResultResponse<OrderResponse>.Failure("Unauthorized role");
 
-            var spec = new OrderSpecification(o => o.Id == orderId && o.SupplierId == Guid.Parse(currentUser.UserId!));
-            var order = await unitOfWork.Repository<Order>().GetByIdSpecTrackedAsync(spec);
+             var spec = new OrderSpecification(o => o.Id == orderId && o.SupplierId == Guid.Parse(currentUser.UserId!));
+             var order = await unitOfWork.Repository<Order>().GetByIdSpecTrackedAsync(spec);
 
-            if (order is null)
-                return ResultResponse<OrderResponse>.Failure("Order not found or not assigned to you.");
+             if (order is null)
+                 return ResultResponse<OrderResponse>.Failure("Order not found or not assigned to you.");
 
-            if (order.Status != OrderStatus.Pending)
-                return ResultResponse<OrderResponse>.Failure("Only pending orders can be accepted.");
+             if (order.Status != OrderStatus.Pending)
+                 return ResultResponse<OrderResponse>.Failure("Only pending orders can be accepted.");
 
-            // Add AwaitingPayment tracking entry
-            await AddTrackingEntry(order.Id, TrackingStatus.AwaitingPayment, order.Status, order.Status);
+             // Add AwaitingPayment tracking entry
+             await AddTrackingEntry(order.Id, TrackingStatus.AwaitingPayment, order.Status, order.Status);
 
-            await unitOfWork.CommitAsync();
+             await unitOfWork.CommitAsync();
 
-            logger.LogInformation("Supplier {SupplierId} accepted order {OrderId}",
-                currentUser.UserId, orderId);
+             logger.LogInformation("Supplier {SupplierId} accepted order {OrderId}",
+                 currentUser.UserId, orderId);
 
-            // Notify the StoreOwner
-            await notificationService.SendAndSaveNotificationAsync(
-                order.StoreOwnerId,
-                "Order Accepted",
-                $"Your order {order.OrderNumber} has been accepted by the supplier. Please proceed with payment.",
-                NotificationType.OrderStatusUpdated,
-                order.Id);
+             // Notify the StoreOwner
+             await notificationService.SendAndSaveNotificationAsync(
+                 order.StoreOwnerId,
+                 "Order Accepted",
+                 $"Your order {order.OrderNumber} has been accepted by the supplier. Please proceed with payment.",
+                 NotificationType.OrderStatusUpdated,
+                 order.Id);
 
-            var mapped = mapper.Map<OrderResponse>(order);
-            return ResultResponse<OrderResponse>.Success(mapped);
-        }
+             var mapped = mapper.Map<OrderResponse>(order);
+             return ResultResponse<OrderResponse>.Success(mapped);
+         }
 
-        // Supplier rejects a pending order (changes status to Cancelled, notifies merchant)
-        public async Task<ResultResponse<OrderResponse>> RejectOrderAsync(Guid orderId)
-        {
-            if (!currentUser.IsAuthenticated)
-                return ResultResponse<OrderResponse>.Failure("Unauthorized");
+         // Supplier rejects a pending order (changes status to Cancelled, notifies merchant)
+         public async Task<ResultResponse<OrderResponse>> RejectOrderAsync(Guid orderId)
+         {
+             if (!currentUser.IsAuthenticated)
+                 return ResultResponse<OrderResponse>.Failure("Unauthorized");
 
-            if (currentUser.Role != "Supplier")
-                return ResultResponse<OrderResponse>.Failure("Unauthorized role");
+             if (currentUser.Role != "Supplier")
+                 return ResultResponse<OrderResponse>.Failure("Unauthorized role");
 
-            var spec = new OrderSpecification(o => o.Id == orderId && o.SupplierId == Guid.Parse(currentUser.UserId!));
-            var order = await unitOfWork.Repository<Order>().GetByIdSpecTrackedAsync(spec);
+             var spec = new OrderSpecification(o => o.Id == orderId && o.SupplierId == Guid.Parse(currentUser.UserId!));
+             var order = await unitOfWork.Repository<Order>().GetByIdSpecTrackedAsync(spec);
 
-            if (order is null)
-                return ResultResponse<OrderResponse>.Failure("Order not found or not assigned to you.");
+             if (order is null)
+                 return ResultResponse<OrderResponse>.Failure("Order not found or not assigned to you.");
 
-            if (order.Status != OrderStatus.Pending)
-                return ResultResponse<OrderResponse>.Failure("Only pending orders can be rejected.");
+             if (order.Status != OrderStatus.Pending)
+                 return ResultResponse<OrderResponse>.Failure("Only pending orders can be rejected.");
 
-            order.Status = OrderStatus.Cancelled;
-            order.UpdatedAt = DateTime.UtcNow;
+             order.Status = OrderStatus.Cancelled;
+             order.UpdatedAt = DateTime.UtcNow;
 
-            await unitOfWork.CommitAsync();
+             await unitOfWork.CommitAsync();
 
-            logger.LogInformation("Supplier {SupplierId} rejected order {OrderId}",
-                currentUser.UserId, orderId);
+             logger.LogInformation("Supplier {SupplierId} rejected order {OrderId}",
+                 currentUser.UserId, orderId);
 
-            // Notify the StoreOwner
-            await notificationService.SendAndSaveNotificationAsync(
-                order.StoreOwnerId,
-                "Order Rejected",
-                $"Your order {order.OrderNumber} has been rejected by the supplier.",
-                NotificationType.OrderCancelled,
-                order.Id);
+             // Notify the StoreOwner
+             await notificationService.SendAndSaveNotificationAsync(
+                 order.StoreOwnerId,
+                 "Order Rejected",
+                 $"Your order {order.OrderNumber} has been rejected by the supplier.",
+                 NotificationType.OrderCancelled,
+                 order.Id);
 
-            var mapped = mapper.Map<OrderResponse>(order);
-            return ResultResponse<OrderResponse>.Success(mapped);
-        }
+             var mapped = mapper.Map<OrderResponse>(order);
+             return ResultResponse<OrderResponse>.Success(mapped);
+         }*/
 
         // Supplier submits a price offer for a pending order (عرض السعر)
         // Sets UnitPrice on all items, saves SupplierNotes, transitions to AwaitingPayment, notifies merchant

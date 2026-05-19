@@ -12,8 +12,9 @@ namespace Wasl.Infrastructure.Services
             var profile = new UserProfileResponse
             {
                 UserId = user.Id.ToString(),
-                Email = user.Email,
-                PhoneNumber = user.PhoneNumber,
+                UserName = user.UserName!,
+                Email = user.Email!,
+                PhoneNumber = user.PhoneNumber!,
                 Status = user.UserType.ToString(),
                 BusinessName = user.BusinessName,
                 IsDeleted = user.IsDeleted,
