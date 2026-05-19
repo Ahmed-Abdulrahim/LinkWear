@@ -393,6 +393,3 @@ git push origin feature/YourFeature
 
 ---
 
-<p align="center">
-  Built with ❤️ by <a href="https://github.com/Ahmed-Abdulrahim"><strong>Ahmed Abdulrahim</strong></a>
-</p>
